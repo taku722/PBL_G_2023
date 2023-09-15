@@ -33,20 +33,14 @@ int Precomputation(CMysql *con){
 	srand((INT64)time(NULL));
 
 	while(i<Table_Num){
-		/*=====課題ex6_1 (start)===============*/
-		//(1)AとBにランダムな数を代入しよう！
 		A = (INT64)rand() % Order;
 		B = (INT64)rand() % Order;
-		//(2)R=[A]P+[B]Qを求めよう！
 		SCM(&tmp_P,A,P);
 		SCM(&tmp_Q,B,Q);
 		ECA(&tmp,tmp_P,tmp_Q);
-		//(3)配列（pre_R[],pre_A[],pre_B[]）に登録しよう！
-		//注意　pre_R[]の型はE_Pointである
 		pre_A[i]=A;
 		pre_B[i]=B;
 		pre_R[i].x=tmp.x;
-		/*=====課題ex6_1 (finish)===============*/
 		i++;
 	}
 	return 1;
@@ -62,21 +56,16 @@ int Random_Walk(CMysql *con){
 
 	srand((INT64)time(NULL));
 
-	/*=====課題ex6_2 (start)===============*/
-	//(1)初期点用に_A,_Bにランダムな数をセットし,_Rを計算しよう！(flagも忘れないように注意！)
 	_A = (INT64)rand() % Order;
 	_B = (INT64)rand() % Order;
 	SCM(&tmp_P,A,P);
 	SCM(&tmp_Q,B,Q);
 	ECA(&tmp,tmp_P,tmp_Q);
-	_R.x = tmp.x;
-	//(2)生成した座標をmySQLに登録をしよう！
+	_R.x = tmp.x;  _R.y=tmp.y; _R.flag=tmp.flag;
 	sprintf(str,"%lld",_A); ret_a = str;
 	sprintf(str,"%lld",_B); ret_b = str;
 	sprintf(str,"%lld",_R.x); ret_x = str;
 	con -> SetData(ret_x,ret_a,ret_b);
-	//(3)衝突するまで_Aとpre_A[]から次のAを求めよう!　同様にB,Rを求めよう！
-	//HINT AとBは通常の加算、Rは楕円加算
 	while(1){
 		A = (_A + pre_A[_R.x%Table_Num])%Order;
 		B = (_B + pre_B[_R.x%Table_Num])%Order;
@@ -88,17 +77,17 @@ int Random_Walk(CMysql *con){
 		pthread_mutex_lock(&t_mutex);
 		if(FindThenSetData(ret_x,ret_a,ret_b,con)){
 			printf("collision occur\n");
-			printf("(X,A,B)=(%lld,%lld,%lld)\n",X,A,B);
+			printf("(X,A,B)=(%lld,%lld,%lld)\n",R.x,A,B);
 			pthread_mutex_unlock(&t_mutex); 
 			break;
 		}else{
-			printf("(X,A,B)=(%lld,%lld,%lld)\n",X,A,B);
+			printf("(X,A,B)=(%lld,%lld,%lld)\n",R.x,A,B);
 			pthread_mutex_unlock(&t_mutex); 
 		}
 		
 		_A = A;
 		_B = B;
-		_R.x = R.x;
+		_R.x = R.x; _R.y=R.y; _R.flag=R.flag;
 	}
 	/*=====課題ex6_2 (finish)===============*/
 	return 1;
